@@ -18,6 +18,7 @@ MUTATION_RATE = 0.05
 MAX_GENERATIONS = 2000
 # How much to take from the best solutions
 SELECTION_BIASED = POPULATION_SIZE * 0.5
+SELECTION_BIASED_PART2 = POPULATION_SIZE * 0.1
 # How much to take from the best solutions for crossover
 SELECTION_BIASED_CROSSOVER = POPULATION_SIZE * 0.8
 CHANGE_LAMARCK = 0.5
@@ -135,12 +136,11 @@ def fix_cross(a, b):
 
 # Perform mutation
 def mutate(permutation):
-    for i in range(int(len(ALPHABET)*MUTATION_RATE)):
+    for i in range(int(len(ALPHABET) * MUTATION_RATE)):
         j = random.randint(0, len(ALPHABET) - 1)
         z = random.randint(0, len(ALPHABET) - 1)
         permutation[z], permutation[j] = permutation[j], permutation[z]
     return permutation
-
 
 
 def sort_by_grade(objects, grades):
@@ -213,8 +213,8 @@ def create_population_part1(best_individual):
     for i in range(size):
         new_population.append(mutate(best_individual[0][0].copy()))
     population = int(SELECTION_BIASED)
-    if population > (POPULATION_SIZE-size)-size2:
-        population = (POPULATION_SIZE-size)-size2
+    if population > (POPULATION_SIZE - size) - size2:
+        population = (POPULATION_SIZE - size) - size2
     new_population.extend([mutate(best[0]) for best in best_individual[:population]])
 
     for_crossover = best_individual[:int(SELECTION_BIASED_CROSSOVER)]
@@ -230,7 +230,6 @@ def create_population_part1(best_individual):
         new_population.append(child)
     # new_population.append(list('yxintozjcebldukmsvpqrhwgaf'))
     return new_population
-
 
 
 def lamarck_algorithm():
@@ -259,7 +258,6 @@ def lamarck_algorithm():
         final_ans = best_individual[0]
         print(final_ans)
         print("generations: ", generations)
-        print("percent: ", res(final_ans[0]))
         print("counter_convergence: ", counter_convergence)
         # information for graph
         best_results.append((best_individual[0][1]))
@@ -297,17 +295,10 @@ def darwin_algorithm():
         results = beforAndAfterMutate(population)  # make mutation and calculate fitness
         # best_individual = sort_by_grade(population, fitness_scores)
         best_individual = (sorted(results.items(), key=lambda item: item[1], reverse=True))
-
-        # if best_ans_for_generations != "":
-        #     add = best_individual[0][0].copy()
-        #     population[-1] = add
-
         final_ans = best_individual[0]
         print(final_ans)
         print("generations: ", generations)
-        print("percent: ", res(final_ans[0]))
         print("counter_convergence: ", counter_convergence)
-
         # information for graph
         best_results.append((best_individual[0][1]))
         worst_results.append((best_individual[-1][1]))
@@ -317,10 +308,9 @@ def darwin_algorithm():
             counter_convergence -= 1
         else:
             counter_convergence = 200
-
         best_ans_for_generations = final_ans[1]
         # Create new population through selection, crossover, and mutation
-        new_population = create_population_darwin(best_individual)
+        new_population = create_population_darwin(best_individual).copy()
         population = new_population.copy()
         generations += 1
     PercentPerGeneration(best_results, worst_results, average_results)
@@ -339,7 +329,7 @@ def writeRes(final_ans):
 # create new population with lamarck - duplicate the best individuals
 def create_population_lamarck(best_individual):
     new_population = []
-    count = int(SELECTION_BIASED)
+    count = int(SELECTION_BIASED_PART2)
     top_best_individual = best_individual[:10].copy()
     for best in top_best_individual:
         if len(new_population) >= POPULATION_SIZE:
@@ -355,7 +345,7 @@ def create_population_lamarck(best_individual):
 
 def create_population_darwin(best_individual):
     new_population = []
-    count = int(SELECTION_BIASED)
+    count = int(SELECTION_BIASED_PART2)
     top_best_individual = best_individual[:10].copy()
     new_population.append(list(best_individual[0][0]).copy())
     for best in top_best_individual:
@@ -366,10 +356,11 @@ def create_population_darwin(best_individual):
     # creat new population
     new_group = new_population.copy()
     # add random individual
-    for i in range(POPULATION_SIZE - len(new_population)):
+    size_left = POPULATION_SIZE - len(new_population)
+    for i in range(size_left):
         new_group.append(mutate(list(random.choice(best_individual)[0])).copy())
-    # new_population = crossover_population(None, new_group, "darwin")
-    return new_population
+    # new_group = crossover_population(new_group, best_individual, "darwin")
+    return new_group
 
 
 # take population and return new population after crossover
@@ -388,12 +379,11 @@ def crossover_population(dest_population, source_population, mode):
             dest_population.append(child)
         return dest_population
     elif mode == "darwin":
-        dest_population = []
         # do this until we get the same size of population
         while len(dest_population) < POPULATION_SIZE:
-            parent1 = random.choice(source_population)
-            parent2 = random.choice(source_population)
-            child = mutate(crossover(parent1, parent2)).copy()
+            parent1 = list(random.choice(source_population)[0])
+            parent2 = list(random.choice(source_population)[0])
+            child = mutate(crossover(parent1, parent2))
             if len(child) != 26:
                 print("error")
             dest_population.append(child)
@@ -406,27 +396,6 @@ def beforAndAfterMutate(population):
     for people in population:
         dict_map["".join(people)] = calculate_fitness(mutate(list(people)))
     return dict_map
-
-
-def create_population_ver2(best_individual):
-    new_population = []
-    best = best_individual[0][0]
-    for i in range(5):
-        new_population.append(best)
-    while len(new_population) < POPULATION_SIZE - 1:
-        parent1 = random.choice(best_individual)[0]
-        parent2 = random.choice(best_individual)[0]
-        child = crossover(parent1, parent2)
-        new_population.append(child)
-        if len(child) != 26:
-            print("error")
-    for i in range(20):
-        index = random.randint(0, 98)
-        new_population[index] = mutate(new_population[index])
-    new_population.append(best)
-    return new_population
-        dict["".join(people)] = calculate_fitness(mutate(list(people)))
-    return dict
 
 
 def graph_results(best_results, worst_results, average_results):
