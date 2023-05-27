@@ -22,7 +22,7 @@ def save_graph(name, array):
     ax.plot(x_values, array)
 
     plt.ylim(0, 100)
-    plt.yticks(range(0, int(max(array)), 50))
+    plt.yticks(range(0, int(max(array)+100), 50))
     plt.xlim(0, len(array))
     plt.xticks(range(0, len(array), 50))
 

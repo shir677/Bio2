@@ -1,5 +1,8 @@
 import random
 import re
+import statistics
+
+from graph import PercentPerGeneration
 
 # Constants
 ALPHABET = "abcdefghijklmnopqrstuvwxyz"
@@ -13,14 +16,13 @@ FREQ_FILE2 = "Letter2_Freq.txt"
 # Genetic Algorithm Parameters
 POPULATION_SIZE = 100
 MUTATION_RATE = 0.2
-MAX_GENERATIONS = 2000
+MAX_GENERATIONS = 10000
 # How much to take from the best solutions
 SELECTION_BIASED = POPULATION_SIZE * 0.1
 # How much to take from the best solutions for crossover
 SELECTION_BIASED_CROSSOVER = POPULATION_SIZE * 1
 CHANGE_LAMARCK = 0.5
 COUNTER_CONVERGENCE = 100
-
 
 
 # return dict key=letter, val=num apper
@@ -195,7 +197,7 @@ def genetic_algorithm():
         print(final_ans)
         print("generations: ", generations)
         print("percent: ", res(final_ans[0]))
-        print("counter_convergence: " , counter_convergence)
+        print("counter_convergence: ", counter_convergence)
 
         if best_ans_for_generations != "" and best_ans_for_generations == final_ans[1]:
             counter_convergence -= 1
@@ -213,15 +215,9 @@ def genetic_algorithm():
     return generations
 
 
-def deleteLater(final_ans):
+def deleteLater(final_ans, generations):
     if 'yxintozjcebldukmsvpqrhwgaf' == "".join(final_ans[0]):
         print(generations)
-
-
-"""        • 25% מהפתרונות מתקבלים ע"י רפליקציה של בחירה מתועדפת )selection biased )
-• 75% מהפתרונות מתקבלים ע"י crossover של בחירות מתועדפות )selection biased)
-• 3% מוטציות על כל פתרון חדש
-• אליטיזם – אנחנו מעתיקים את הפתרון הטוב ביותר כמו שהוא    """
 
 
 def create_population_ver1(best_individual):
@@ -256,16 +252,20 @@ def create_population_ver0(best_individual):
 
 
 def lamarck_algorithm():
-    population = generate_population()
+    # for graph - each generation information
+    best_results = []
+    worst_results = []
+    average_results = []
+    population = generate_population()  # generate random population
     generations = 0
     best_individual = None
     best_ans_for_generations = ""
     counter_convergence = COUNTER_CONVERGENCE
     while generations < MAX_GENERATIONS and counter_convergence:
-
+        # Create new population through selection, crossover, and mutation
         [mutate(individual) for individual in population]
 
-        if (best_ans_for_generations!=""):
+        if best_ans_for_generations != "":
             add = best_individual[0][0].copy()
             population[-1] = add
 
@@ -278,12 +278,16 @@ def lamarck_algorithm():
         print(final_ans)
         print("generations: ", generations)
         print("percent: ", res(final_ans[0]))
-        print("counter_convergence: " , counter_convergence)
+        print("counter_convergence: ", counter_convergence)
+        # information for graph
+        best_results.append((best_individual[0][1]))
+        worst_results.append((best_individual[-1][1]))
+        average_results.append(statistics.mean(fitness_scores))
 
         if best_ans_for_generations != "" and best_ans_for_generations == final_ans[1]:
             counter_convergence -= 1
         else:
-            counter_convergence = 100
+            counter_convergence = 200
 
         best_ans_for_generations = final_ans[1]
         # Create new population through selection, crossover, and mutation
@@ -291,37 +295,53 @@ def lamarck_algorithm():
 
         population = new_population
         generations += 1
-
+    PercentPerGeneration(best_results, worst_results, average_results)
     writeRes(final_ans[0])
     return generations
 
+
 def darwin_algorithm():
+    best_results = []
+    worst_results = []
+    average_results = []
     population = generate_population()
-    save_population = population.copy()
     generations = 0
     best_individual = None
+    best_ans_for_generations = ""
     counter_convergence = COUNTER_CONVERGENCE
     while generations < MAX_GENERATIONS and counter_convergence:
+        fitness_scores = [calculate_fitness(individual) for individual in population]
 
-        results = beforAndAfterMutate(population)
+        results = beforAndAfterMutate(population)  # make mutation and calculate fitness
         # best_individual = sort_by_grade(population, fitness_scores)
         best_individual = (sorted(results.items(), key=lambda item: item[1], reverse=True))
+
+        # if best_ans_for_generations != "":
+        #     add = best_individual[0][0].copy()
+        #     population[-1] = add
+
         final_ans = best_individual[0]
         print(final_ans)
         print("generations: ", generations)
         print("percent: ", res(final_ans[0]))
-        print("counter_convergence: " , counter_convergence)
+        print("counter_convergence: ", counter_convergence)
+
+        # information for graph
+        best_results.append((best_individual[0][1]))
+        worst_results.append((best_individual[-1][1]))
+        average_results.append(statistics.mean(fitness_scores))
 
         if best_ans_for_generations != "" and best_ans_for_generations == final_ans[1]:
             counter_convergence -= 1
         else:
-            counter_convergence = 100
+            counter_convergence = 200
 
         best_ans_for_generations = final_ans[1]
         # Create new population through selection, crossover, and mutation
         new_population = create_population_darwin(best_individual)
         population = new_population.copy()
         generations += 1
+    PercentPerGeneration(best_results, worst_results, average_results)
     writeRes(final_ans[0])
     return generations
 
@@ -334,60 +354,76 @@ def writeRes(final_ans):
         file.write("".join(final_ans))
 
 
+# create new population with lamarck - duplicate the best individuals
 def create_population_lamarck(best_individual):
     new_population = []
     count = int(SELECTION_BIASED)
-    top_best_individual = best_individual[:int(SELECTION_BIASED)].copy()
+    top_best_individual = best_individual[:10].copy()
     for best in top_best_individual:
         if len(new_population) >= POPULATION_SIZE:
             break
-        new_population = [best[0].copy()] * count
+        for i in range(count):
+            new_population.append(best[0].copy())
         count -= 1
-    """
-    for_crossover = best_individual[:int(SELECTION_BIASED_CROSSOVER)]
-    while len(new_population) < POPULATION_SIZE:
-        parent1 = random.choice(for_crossover)[0]
-        parent2 = random.choice(for_crossover)[0]
-    """
-    for_rest = best_individual.copy()
-
-    while len(new_population) < POPULATION_SIZE:
-        new_population.append(random.choice(for_rest)[0])
+    for_rest = best_individual
+    # the rest of the population -> do crossover
+    crossover_population(new_population, for_rest, "lamarck")
     return new_population
+
 
 def create_population_darwin(best_individual):
     new_population = []
     count = int(SELECTION_BIASED)
-    for best in best_individual[:int(SELECTION_BIASED)]:
-        new_population = [best[0]] * count
+    top_best_individual = best_individual[:10].copy()
+    new_population.append(list(best_individual[0][0]).copy())
+    for best in top_best_individual:
+        for i in range(count):
+            new_copy = mutate(list(best[0]))
+            new_population.append(new_copy)
         count -= 1
-    """
-    for_crossover = best_individual[:int(SELECTION_BIASED_CROSSOVER)]
-    while len(new_population) < POPULATION_SIZE:
-        parent1 = random.choice(for_crossover)[0]
-        parent2 = random.choice(for_crossover)[0]
-    """
-    for_rest = best_individual
-
-    while len(new_population) < POPULATION_SIZE:
-        new_population.append(random.choice(for_rest)[0])
+    # creat new population
+    new_group = new_population.copy()
+    # add random individual
+    for i in range(POPULATION_SIZE - len(new_population)):
+        new_group.append(mutate(list(random.choice(best_individual)[0])).copy())
+    # new_population = crossover_population(None, new_group, "darwin")
     return new_population
 
 
-# dict of population befor And After Mutate, key=befor, value=After
+# take population and return new population after crossover
+def crossover_population(dest_population, source_population, mode):
+    if mode == "lamarck":
+        # do this until we get the same size of population
+        while len(dest_population) < POPULATION_SIZE:
+            parent1 = random.choice(source_population)[0].copy()
+            parent2 = random.choice(source_population)[0].copy()
+            child = crossover(parent1, parent2)
+            if len(child) != 26:
+                print("error")
+            child = mutate(child)
+            if len(child) != 26:
+                print("error 2")
+            dest_population.append(child)
+        return dest_population
+    elif mode == "darwin":
+        dest_population = []
+        # do this until we get the same size of population
+        while len(dest_population) < POPULATION_SIZE:
+            parent1 = random.choice(source_population)
+            parent2 = random.choice(source_population)
+            child = mutate(crossover(parent1, parent2)).copy()
+            if len(child) != 26:
+                print("error")
+            dest_population.append(child)
+        return dest_population
+
+
+# dict of population before And After Mutate, key=before, value=After
 def beforAndAfterMutate(population):
-    dict = {}
+    dict_map = {}
     for people in population:
-        dict["".join(people)] = calculate_fitness(mutate(list(people)))
-    return dict
-
-
-""""
-.2 חוזרים על הבאים K פעמים:
-a. חשב את המרחק לכל מסלול
-b. שכפל את המסלול הטוב ביותר להיות 5% מהאוכלוסייה החדשה
-c. לשאר יש לעשות crossover
-d. גורמים ל- 20% מוטציה על הפתרונות"""
+        dict_map["".join(people)] = calculate_fitness(mutate(list(people)))
+    return dict_map
 
 
 def create_population_ver2(best_individual):
@@ -418,7 +454,7 @@ if __name__ == "__main__":
     common_word = file_to_arr(COMMON_WORD)
 
     sulotionFreq = statistic_letter(cipher_text.strip())
-    #total_steps = genetic_algorithm()
-    #total_steps = darwin_algorithm()
-    total_steps = lamarck_algorithm()
+    total_steps = genetic_algorithm()
+    # total_steps = darwin_algorithm()
+    # total_steps = lamarck_algorithm()
     print(f"Total Steps: {total_steps}")
