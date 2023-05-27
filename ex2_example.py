@@ -323,7 +323,10 @@ def writeRes(final_ans):
     with open(PLAIN_TEXT_FILE, "w") as file:
         file.write(decrypted_text)
     with open(PERMUTATION_FILE, "w") as file:
-        file.write("".join(final_ans))
+        text = ""
+        for i in range(26):
+            text += ALPHABET[i] + final_ans[i] + "\n"
+        file.write(text)
 
 
 # create new population with lamarck - duplicate the best individuals
