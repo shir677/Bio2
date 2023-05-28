@@ -2,6 +2,7 @@ import random
 import re
 import statistics
 from graph import PercentPerGeneration
+import sys
 
 # Constants
 ALPHABET = "abcdefghijklmnopqrstuvwxyz"
@@ -407,6 +408,9 @@ def graph_results(best_results, worst_results, average_results):
 
 
 if __name__ == "__main__":
+    run = 1
+    if len(sys.argv) > 1:
+        run = int(sys.argv[1])
     with open(CIPHER_TEXT_FILE, "r") as file:
         cipher_text = file.read().lower()
     sum_enc_word = len((cipher_text.strip().split()))
@@ -415,7 +419,10 @@ if __name__ == "__main__":
     common_word = file_to_arr(COMMON_WORD)
 
     sulotionFreq = statistic_letter(cipher_text.strip())
-    total_steps = genetic_algorithm()
-    # total_steps = darwin_algorithm()
-    # total_steps = lamarck_algorithm()
+    if (run == 2):
+        total_steps = darwin_algorithm()
+    elif (run == 3):
+        total_steps = lamarck_algorithm()
+    else:
+        total_steps = genetic_algorithm()
     print(f"Total Steps: {total_steps}")
